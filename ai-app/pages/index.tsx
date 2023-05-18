@@ -1,11 +1,42 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
-
-const inter = Inter({ subsets: ['latin'] })
+import mainImage from '@/assets/images/ucla.jpg'
+import { Button, Form, Spinner } from 'react-bootstrap'
+import { FormEvent, useState } from 'react'
 
 export default function Home() {
+
+  const [answer, setAnswer] = useState("");
+  const [answerLoading, setAnswerLoading] = useState(false);
+  const [answerLoadingError, setAnswerLoadingError] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.target as HTMLFormElement);
+    const prompt = formData.get("prompt")?.toString().trim();
+    //trim removes any white spaces before or after
+    if (prompt) {
+      try {
+        setAnswer("")
+        setAnswerLoadingError(false)
+        setAnswerLoading(true)
+        //encodeURIComponent takes care of encoding any special characters like spaces or percentage signs so they can be in the URL
+        const response = await fetch("/api/ucla?prompt=" + encodeURIComponent(prompt))
+        const body = await response.json();
+        setAnswer(body.answerText)
+
+      } catch (error) {
+        console.log(error)
+        setAnswerLoadingError(true);
+      } finally {
+        setAnswerLoading(false);
+      }
+    }
+
+
+  }
+
   return (
     <>
       <Head>
@@ -15,108 +46,35 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
+        <h1>UCL-AI</h1>
+        <h2>powered by GPT-3</h2>
+        <div>What questions do you have about UCLA?</div>
+        <div className={styles.mainImageContainer}>
+        <Image
+        src={mainImage}
+        fill
+        alt='A picture of Royce Hall on UCLA Campus'
+        priority
+        className={styles.mainImage}
+        />
         </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
+        <Form onSubmit={handleSubmit} className={styles.inputForm}>
+          <Form.Group className='mb-3' controlId='prompt-input'>
+            <Form.Label>Ask a question about...</Form.Label>
+            <Form.Control
+            name='prompt'
+            placeholder='e.g. what are the best dining halls on campus?'
+            maxLength={100}
             />
-          </div>
-        </div>
+          </Form.Group>
+          <Button type='submit' className='mb-3' disabled={answerLoading}>
+            Ask
+          </Button>
+        </Form>
 
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+        {answerLoading && <Spinner animation='border' />}
+        {answerLoadingError && "Something went wrong. Please try again"}
+        {answer && <h5>{answer}</h5>}
       </main>
     </>
   )
